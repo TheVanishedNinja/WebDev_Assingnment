@@ -5,6 +5,43 @@ const path = require('path');
 const hostname = '127.0.0.1';
 const port = 3000;
 
+const mysql = require('mysql2');
+const express = require('express');
+const app = express();
+
+const pool = mysql.createPool({
+  host: "localhost",
+  user: "root",
+  password: "BunnyWheat!234",
+  database: "budgetdb",
+})
+
+app.use(express.urlencoded({ extended: true}));
+app.use(express.static(path.join(__dirname, 'templates')));
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/signup', function(req, res) {
+  res.sendFile(path.join(__dirname, 'templates', 'signup.html'));
+});
+
+app.get('/', function(req, res) {
+  res.redirect('/signup');
+});
+
+app.post('/submit-login', function(req, res){
+  const {username, password} = req.body;
+
+  const dbadd = 'INSERT INTO userinfo (username, userpassword) VALUES (?, ?)'
+  pool.execute(dbadd, [username, password], function(err, result) {
+    if(err) {
+      console.error('Error inserting: ', err)
+      return;
+    }
+    res.status(200)
+    res.end('Successful signup');
+  });
+});
+
 const server = createServer((req, res) => {
 
   let filePath = '';
@@ -37,6 +74,6 @@ const server = createServer((req, res) => {
   });
 });
 
-server.listen(port, hostname, () => {
+app.listen(port,  () => {
   console.log(`Server running at http://${hostname}:${port}/`);
 });
