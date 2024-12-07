@@ -62,17 +62,43 @@ app.get('/', function(req, res) {
   res.sendFile(path.join(__dirname, 'templates', 'login.html'));
 });
 
-app.post('/home', function(req, res){
+app.get('/login', function(req, res) {
+  res.sendFile(path.join(__dirname, 'templates', 'username.html'));
+});
+
+app.get('/home', function(req, res) {
+  res.sendFile(path.join(__dirname, 'templates', 'home.html'));
+});
+
+app.post('/submit-signup', function(req, res){
   const {username, password} = req.body;
 
-  const dbadd = 'INSERT INTO userinfo (username, userpassword) VALUES (?, ?)'
+  const dbadd = 'INSERT INTO userinfo (username, userpassword) VALUES (?, ?)';
   pool.execute(dbadd, [username, password], function(err, result) {
     if(err) {
       console.error('Error inserting: ', err)
+      return result.end('Error');
+    }
+    res.redirect('/home');
+  });
+});
+
+app.post('/submit-login', function(req, res){
+  const {username, password} = req.body;
+  const verify = 'SELECT * FROM userinfo WHERE username = ? and userpassword = ?';
+  
+  pool.execute(verify, [username, password], function(err, result){
+    if(err) {
+      console.error("Error logging in", err);
       return;
     }
-    res.status(200)
-    res.end('Successful signup');
+    if(result.length > 0) {
+      res.redirect('/home');
+    }
+    else {
+      res.end('Invalid username or password');
+    }
+
   });
 });
 
