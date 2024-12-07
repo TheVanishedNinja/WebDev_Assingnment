@@ -62,7 +62,7 @@ app.get('/', function(req, res) {
   res.sendFile(path.join(__dirname, 'templates', 'login.html'));
 });
 
-app.post('/submit-login', function(req, res){
+app.post('/home', function(req, res){
   const {username, password} = req.body;
 
   const dbadd = 'INSERT INTO userinfo (username, userpassword) VALUES (?, ?)'
