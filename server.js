@@ -4,7 +4,7 @@ const path = require('path');
 
 const hostname = '127.0.0.1';
 const port = 3000;
-
+const bcrypt = require('bcrypt');
 
 
 const server = createServer((req, res) => {
@@ -50,6 +50,8 @@ const pool = mysql.createPool({
   database: "budgetdb",
 })
 
+const scramble = 5;
+
 app.use(express.urlencoded({ extended: true}));
 app.use(express.static(path.join(__dirname, 'templates')));
 app.use(express.static(path.join(__dirname, 'public')));
@@ -84,31 +86,47 @@ app.get('/home', function(req, res) {
 
 app.post('/submit-signup', function(req, res){
   const {username, password, budget} = req.body;
-
+  
+  bcrypt.hash(password, scramble, (err, hashedpw) => {
+  if (err){
+    res.statusCode(404);
+    res.end("Error hashing password ");
+  }
   const dbadd = 'INSERT INTO userinfo (username, userpassword, userbudget) VALUES (?, ?, ?)';
-  pool.execute(dbadd, [username, password, budget], function(err, result) {
+  pool.execute(dbadd, [username, hashedpw, budget], function(err, result) {
     if(err) {
       console.error('Error inserting: ', err)
-      return result.end('Error');
+      return res.end('Error');
     }
     res.redirect('/home');
   });
+});
 });
 
 
 
 app.post('/submit-login', function(req, res){
   const {username, password} = req.body;
-  const verify = 'SELECT * FROM userinfo WHERE username = ? and userpassword = ?';
+  const verify = 'SELECT * FROM userinfo WHERE username = ?';
   
-  pool.execute(verify, [username, password], function(err, result){
+  pool.execute(verify, [username], function(err, result){
     if(err) {
       console.error("Error logging in", err);
       return;
     }
     if(result.length > 0) {
-      const user = result[0];
-      res.render('home', { budget:user.userbudget, username: user.username});
+      bcrypt.compare(password, result[0].userpassword, (err, res2) => {
+        if(res2) {
+          const user = result[0];
+          res.render('home', { budget:user.userbudget, username: user.username});
+        }
+        else {
+          console.error("Error with comparison", err);
+          return;
+        }
+
+      } ) 
+      
     }
     else {
       res.end('Invalid username or password');
