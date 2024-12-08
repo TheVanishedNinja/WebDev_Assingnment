@@ -15,8 +15,14 @@
     <div class="container">
         <div class="card">
             <h2>Budget</h2>
-            <p>Total Budget: $PLACEHOLDER</p>
-            <p>Remaining: $PLACEHOLDER</p>
+            <form action="/submit-budget" method="POST">
+                <input type="hidden" name="username" value="<%= username %>">
+                <label for="budget">Edit Budget:</label>
+                <input type="number" id="budget" name="budget" step="0.01" required>
+                <button type="submit">Update Budget</button>
+            </form>
+            <p>Total Budget: $<%= budget %></p>
+            <p>Remaining: $<%= budget %></p>
         </div>
         <div class="card">
             <h2>Investments</h2>

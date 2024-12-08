@@ -53,6 +53,10 @@ const pool = mysql.createPool({
 app.use(express.urlencoded({ extended: true}));
 app.use(express.static(path.join(__dirname, 'templates')));
 app.use(express.static(path.join(__dirname, 'public')));
+app.set('views', path.join(__dirname, 'templates'));
+app.set('view engine', 'ejs');
+
+
 
 app.get('/signup', function(req, res) {
   res.sendFile(path.join(__dirname, 'templates', 'signup.html'));
@@ -67,14 +71,22 @@ app.get('/login', function(req, res) {
 });
 
 app.get('/home', function(req, res) {
-  res.sendFile(path.join(__dirname, 'templates', 'home.html'));
+  const { budget } = req.query;
+  if (!budget) {
+    res.redirect('/');
+    return;
+  }
+  res.render('/home', {budget, username});
 });
 
-app.post('/submit-signup', function(req, res){
-  const {username, password} = req.body;
 
-  const dbadd = 'INSERT INTO userinfo (username, userpassword) VALUES (?, ?)';
-  pool.execute(dbadd, [username, password], function(err, result) {
+
+
+app.post('/submit-signup', function(req, res){
+  const {username, password, budget} = req.body;
+
+  const dbadd = 'INSERT INTO userinfo (username, userpassword, userbudget) VALUES (?, ?, ?)';
+  pool.execute(dbadd, [username, password, budget], function(err, result) {
     if(err) {
       console.error('Error inserting: ', err)
       return result.end('Error');
@@ -82,6 +94,8 @@ app.post('/submit-signup', function(req, res){
     res.redirect('/home');
   });
 });
+
+
 
 app.post('/submit-login', function(req, res){
   const {username, password} = req.body;
@@ -93,7 +107,8 @@ app.post('/submit-login', function(req, res){
       return;
     }
     if(result.length > 0) {
-      res.redirect('/home');
+      const user = result[0];
+      res.render('home', { budget:user.userbudget, username: user.username});
     }
     else {
       res.end('Invalid username or password');
@@ -101,6 +116,20 @@ app.post('/submit-login', function(req, res){
 
   });
 });
+
+
+
+app.post('/submit-budget', function(req, res) {
+  const {budget} = req.body;
+  const username = req.body.username;
+  
+  const update = 'UPDATE userinfo SET userbudget = ? WHERE username = ?';
+  pool.execute(update, [budget, username], function(err, result) {
+   
+    res.render('home', { budget, username} );
+  });
+});
+
 
 app.listen(port,  () => {
   console.log(`Server running at http://${hostname}:${port}/`);
